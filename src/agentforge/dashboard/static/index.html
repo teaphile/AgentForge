@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentForge Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { bg: '#0a0a0a', card: '#1a1a2e', border: '#2a2a4a' },
+                        accent: { blue: '#3b82f6', green: '#22c55e', amber: '#f59e0b', red: '#ef4444' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="dark bg-dark-bg text-gray-200 min-h-screen" x-data="dashboard()">
+    <!-- Header -->
+    <header class="border-b border-dark-border px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <span class="text-xl font-bold text-white">⚡ AgentForge</span>
+            <span class="text-xs bg-dark-card px-2 py-0.5 rounded text-gray-400">Dashboard</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full" :class="statusColor"></span>
+                <span class="text-sm" x-text="status"></span>
+            </span>
+            <span class="text-sm text-accent-green font-mono" x-text="'$' + totalCost.toFixed(4)"></span>
+            <span class="text-sm text-gray-400 font-mono" x-text="elapsed"></span>
+        </div>
+    </header>
+
+    <div class="flex h-[calc(100vh-57px)]">
+        <!-- Left Sidebar: Agent Cards -->
+        <aside class="w-72 border-r border-dark-border overflow-y-auto p-4 space-y-3">
+            <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-2">Agents</h2>
+            <template x-for="agent in agents" :key="agent.name">
+                <div class="bg-dark-card rounded-lg p-3 border border-dark-border">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-2 h-2 rounded-full" :class="agentStatusColor(agent)"></span>
+                        <span class="font-medium text-white text-sm" x-text="agent.name"></span>
+                    </div>
+                    <div class="text-xs text-gray-400" x-text="agent.role"></div>
+                    <div class="text-xs text-gray-500 mt-1" x-text="agent.model || 'default'"></div>
+                    <div class="flex justify-between mt-2 text-xs">
+                        <span class="text-gray-400">Tokens: <span class="text-yellow-400" x-text="(agent.tokens || 0).toLocaleString()"></span></span>
+                        <span class="text-accent-green" x-text="'$' + (agent.cost || 0).toFixed(4)"></span>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Cost Panel -->
+            <div class="mt-4 pt-4 border-t border-dark-border">
+                <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-2">Cost Breakdown</h2>
+                <div class="bg-dark-card rounded-lg p-3 border border-dark-border space-y-1">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Total</span>
+                        <span class="text-accent-green font-mono font-bold" x-text="'$' + totalCost.toFixed(4)"></span>
+                    </div>
+                    <template x-for="(info, model) in costByModel" :key="model">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-500" x-text="model"></span>
+                            <span class="text-gray-400 font-mono" x-text="'$' + info.cost.toFixed(4)"></span>
+                        </div>
+                    </template>
+                    <div class="border-t border-dark-border pt-1 mt-1 flex justify-between text-xs">
+                        <span class="text-gray-500">Total tokens</span>
+                        <span class="text-yellow-400 font-mono" x-text="totalTokens.toLocaleString()"></span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Area: Execution Timeline -->
+        <main class="flex-1 overflow-y-auto p-6">
+            <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-4">Execution Timeline</h2>
+
+            <div class="space-y-3" id="timeline">
+                <template x-for="step in steps" :key="step.id">
+                    <div class="bg-dark-card rounded-lg border border-dark-border overflow-hidden transition-all duration-300"
+                         :class="{ 'border-accent-blue': step.status === 'running', 'border-accent-green/30': step.status === 'completed', 'border-accent-red/30': step.status === 'error' }">
+                        <!-- Step Header -->
+                        <div class="p-3 flex items-center justify-between cursor-pointer"
+                             @click="step.expanded = !step.expanded">
+                            <div class="flex items-center gap-3">
+                                <span x-text="stepIcon(step)" class="text-lg"></span>
+                                <div>
+                                    <span class="font-medium text-white text-sm" x-text="step.id"></span>
+                                    <span class="text-xs text-gray-500 ml-2" x-text="step.agent"></span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 text-xs">
+                                <span class="text-gray-400" x-text="step.model || ''"></span>
+                                <span class="text-yellow-400 font-mono" x-show="step.tokens" x-text="step.tokens + ' tok'"></span>
+                                <span class="text-accent-green font-mono" x-show="step.cost" x-text="'$' + step.cost.toFixed(4)"></span>
+                                <span class="text-gray-400" x-show="step.duration" x-text="step.duration.toFixed(1) + 's'"></span>
+                            </div>
+                        </div>
+
+                        <!-- Step Details (Expandable) -->
+                        <div x-show="step.expanded" x-transition class="border-t border-dark-border p-3 space-y-2">
+                            <div>
+                                <span class="text-xs text-gray-500">Task:</span>
+                                <p class="text-sm text-gray-300 mt-0.5" x-text="step.task"></p>
+                            </div>
+                            <template x-for="tc in (step.toolCalls || [])" :key="tc.tool + tc.time">
+                                <div class="bg-gray-900/50 rounded p-2 text-xs">
+                                    <span class="text-accent-blue">🔧</span>
+                                    <span class="text-white" x-text="tc.tool"></span>
+                                    <span class="text-gray-500" x-text="'(' + JSON.stringify(tc.args).substring(0,100) + ')'"></span>
+                                    <div class="text-gray-400 mt-1 whitespace-pre-wrap" x-text="(tc.result || '').substring(0, 300)"></div>
+                                </div>
+                            </template>
+                            <div x-show="step.output">
+                                <span class="text-xs text-gray-500">Output:</span>
+                                <pre class="text-sm text-gray-300 mt-0.5 whitespace-pre-wrap max-h-64 overflow-y-auto bg-gray-900/30 rounded p-2" x-text="step.output"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Approval Panel -->
+            <template x-if="pendingApproval">
+                <div class="mt-6 bg-dark-card rounded-lg border-2 border-accent-amber p-4 animate-pulse-slow">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="text-xl">🔔</span>
+                        <span class="font-bold text-accent-amber">Approval Required</span>
+                        <span class="text-sm text-gray-400" x-text="'for step: ' + pendingApproval.step_id"></span>
+                    </div>
+                    <pre class="text-sm text-gray-300 whitespace-pre-wrap bg-gray-900/30 rounded p-3 mb-3 max-h-48 overflow-y-auto"
+                         x-text="pendingApproval.output"></pre>
+                    <div class="flex gap-3">
+                        <button @click="approve(true)"
+                                class="px-4 py-2 bg-accent-green/20 text-accent-green rounded-lg hover:bg-accent-green/30 transition text-sm font-medium">
+                            ✅ Approve
+                        </button>
+                        <button @click="approve(false)"
+                                class="px-4 py-2 bg-accent-red/20 text-accent-red rounded-lg hover:bg-accent-red/30 transition text-sm font-medium">
+                            ❌ Reject
+                        </button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Toast Notifications -->
+            <div class="fixed bottom-4 right-4 space-y-2 z-50">
+                <template x-for="toast in toasts" :key="toast.id">
+                    <div class="bg-dark-card border border-dark-border rounded-lg px-4 py-2 text-sm shadow-lg animate-slide-in"
+                         :class="{ 'border-accent-green/50': toast.type === 'success', 'border-accent-red/50': toast.type === 'error', 'border-accent-blue/50': toast.type === 'info' }"
+                         x-text="toast.message"
+                         x-init="setTimeout(() => { toasts = toasts.filter(t => t.id !== toast.id) }, 4000)">
+                    </div>
+                </template>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

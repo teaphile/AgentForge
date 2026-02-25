@@ -1,0 +1,40 @@
+team:
+  name: "Research & Write Team"
+  llm: "openai/gpt-4o-mini"
+  memory:
+    enabled: true
+    shared: true
+
+agents:
+  researcher:
+    role: "Senior Research Analyst"
+    goal: "Find comprehensive, accurate, and current information on any topic"
+    backstory: "You are a meticulous researcher with 15 years of experience in investigative journalism. You always verify facts from multiple sources and present findings in a structured way."
+    llm: "openai/gpt-4o"
+    tools:
+      - web_search
+    instructions: |
+      Always search for at least 3 different aspects of the topic.
+      Include specific data points, statistics, and expert opinions.
+      Cite the source URL for every fact you include.
+
+  writer:
+    role: "Professional Content Writer"
+    goal: "Transform research into engaging, well-structured articles"
+    backstory: "You are an award-winning writer known for making complex topics accessible and engaging. Your articles are clear, concise, and beautifully structured."
+    llm: "anthropic/claude-3.5-sonnet"
+    instructions: |
+      Write in a professional but approachable tone.
+      Use headers, bullet points, and short paragraphs for readability.
+      Include an introduction, main body with sections, and conclusion.
+      Target length: 800-1200 words.
+
+workflow:
+  steps:
+    - id: research
+      agent: researcher
+      task: "Research the following topic thoroughly: {{input}}"
+
+    - id: write
+      agent: writer
+      task: "Write a comprehensive article based on this research:\n\n{{research.output}}"

@@ -1,0 +1,40 @@
+team:
+  name: "Code Review Team"
+  llm: "openai/gpt-4o-mini"
+
+agents:
+  analyzer:
+    role: "Senior Code Analyst"
+    goal: "Identify bugs, security issues, and code quality problems"
+    backstory: "You are a senior software engineer with deep expertise in code analysis, security auditing, and performance optimization."
+    tools:
+      - file_read
+    instructions: |
+      Analyze the code thoroughly for:
+      1. Bugs and logical errors
+      2. Security vulnerabilities
+      3. Performance issues
+      4. Code style and readability
+      Provide specific line references and severity ratings.
+
+  reviewer:
+    role: "Code Review Writer"
+    goal: "Write clear, actionable code review feedback"
+    instructions: |
+      Format your review as:
+      - Summary (2-3 sentences)
+      - Critical Issues (must fix)
+      - Warnings (should fix)
+      - Suggestions (nice to have)
+      - Overall rating (1-10)
+      Be constructive and specific.
+
+workflow:
+  steps:
+    - id: analyze
+      agent: analyzer
+      task: "Analyze the following code for bugs, security issues, and quality:\n\n{{input}}"
+
+    - id: review
+      agent: reviewer
+      task: "Write a code review based on this analysis:\n\n{{analyze.output}}"

@@ -1,0 +1,36 @@
+team:
+  name: "Customer Support Team"
+  llm: "openai/gpt-4o-mini"
+
+agents:
+  classifier:
+    role: "Support Ticket Classifier"
+    goal: "Classify customer support tickets by category and urgency"
+    instructions: |
+      Classify the ticket into:
+      - Category: billing, technical, account, general
+      - Urgency: low, medium, high, critical
+      - Sentiment: positive, neutral, negative
+      Output as JSON: {"category": "...", "urgency": "...", "sentiment": "..."}
+
+  responder:
+    role: "Customer Support Agent"
+    goal: "Draft helpful, empathetic customer support responses"
+    backstory: "You are a friendly, knowledgeable customer support specialist. You always empathize with the customer and provide clear solutions."
+    instructions: |
+      - Start with empathy and acknowledgment
+      - Provide a clear solution or next steps
+      - Keep it concise but thorough
+      - End with an offer for further help
+      - Match tone to urgency level
+
+workflow:
+  steps:
+    - id: classify
+      agent: classifier
+      task: "Classify this customer support ticket:\n\n{{input}}"
+      output_format: json
+
+    - id: respond
+      agent: responder
+      task: "Draft a customer support response for this ticket.\n\nClassification: {{classify.output}}\n\nOriginal ticket: {{input}}"

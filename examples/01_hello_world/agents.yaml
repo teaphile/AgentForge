@@ -1,0 +1,14 @@
+team:
+  name: "Hello World"
+  llm: "openai/gpt-4o-mini"
+
+agents:
+  assistant:
+    role: "Helpful Assistant"
+    goal: "Answer questions clearly and accurately"
+
+workflow:
+  steps:
+    - id: answer
+      agent: assistant
+      task: "{{input}}"

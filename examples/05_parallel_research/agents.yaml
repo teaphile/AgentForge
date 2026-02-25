@@ -1,0 +1,51 @@
+team:
+  name: "Parallel Research Team"
+  llm: "openai/gpt-4o-mini"
+
+agents:
+  researcher:
+    role: "Research Specialist"
+    goal: "Research a specific aspect of a topic thoroughly"
+    tools:
+      - web_search
+    instructions: |
+      Focus on your specific research angle.
+      Provide detailed findings with citations.
+      Be thorough but concise.
+
+  synthesizer:
+    role: "Research Synthesizer"
+    goal: "Combine multiple research findings into a coherent summary"
+    instructions: |
+      Combine the research findings into a unified, well-organized summary.
+      Identify common themes and unique insights.
+      Present a balanced view of all perspectives.
+
+workflow:
+  steps:
+    - parallel:
+        - id: research_history
+          agent: researcher
+          task: "Research the history and origins of: {{input}}"
+
+        - id: research_current
+          agent: researcher
+          task: "Research the current state and latest developments of: {{input}}"
+
+        - id: research_future
+          agent: researcher
+          task: "Research future predictions and trends for: {{input}}"
+
+    - id: synthesize
+      agent: synthesizer
+      task: |
+        Synthesize these three research reports into a comprehensive overview:
+
+        HISTORY:
+        {{research_history.output}}
+
+        CURRENT STATE:
+        {{research_current.output}}
+
+        FUTURE OUTLOOK:
+        {{research_future.output}}

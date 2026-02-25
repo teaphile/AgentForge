@@ -1,0 +1,37 @@
+team:
+  name: "Approval Workflow Team"
+  llm: "openai/gpt-4o-mini"
+
+agents:
+  drafter:
+    role: "Content Drafter"
+    goal: "Draft professional content based on requirements"
+    instructions: |
+      Write clear, professional content.
+      Follow any specific formatting requirements.
+      Be thorough but concise.
+
+  reviewer:
+    role: "Quality Reviewer"
+    goal: "Review content for accuracy, tone, and quality"
+    instructions: |
+      Review the content for:
+      - Accuracy and correctness
+      - Professional tone
+      - Clarity and readability
+      Rate quality from 1-10 and provide specific feedback.
+
+workflow:
+  steps:
+    - id: draft
+      agent: drafter
+      task: "Draft the following: {{input}}"
+
+    - id: review
+      agent: reviewer
+      task: "Review this content and provide feedback:\n\n{{draft.output}}"
+      approval_gate: true
+
+    - id: finalize
+      agent: drafter
+      task: "Based on this feedback, create the final version:\n\nOriginal: {{draft.output}}\n\nFeedback: {{review.output}}"
