@@ -50,10 +50,10 @@ dev = [
 agentforge = "agentforge.cli.commands:app"
 
 [project.urls]
-Homepage = "https://github.com/whoisaum/agentforge"
-Documentation = "https://github.com/whoisaum/agentforge#readme"
-Repository = "https://github.com/whoisaum/agentforge"
-Issues = "https://github.com/whoisaum/agentforge/issues"
+Homepage = "https://github.com/teaphile/agentforge"
+Documentation = "https://github.com/teaphile/agentforge#readme"
+Repository = "https://github.com/teaphile/agentforge"
+Issues = "https://github.com/teaphile/agentforge/issues"
 
 [tool.hatch.version]
 path = "src/agentforge/_version.py"
